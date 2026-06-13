@@ -1,4 +1,5 @@
 import { createReviewCaseAction } from "@/app/actions";
+import { CaseSubmitButton } from "@/components/case-submit-button";
 import { Topbar } from "@/components/topbar";
 import { SetupNotice } from "@/components/setup-notice";
 import { getCurrentUser } from "@/lib/auth";
@@ -71,9 +72,7 @@ export default async function NewCasePage() {
             validación oficial.
           </div>
 
-          <button className="button-primary mt-6" type="submit">
-            Procesar caso
-          </button>
+          <CaseSubmitButton />
         </form>
       </section>
     </main>
