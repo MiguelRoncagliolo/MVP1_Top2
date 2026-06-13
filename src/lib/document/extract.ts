@@ -1,4 +1,3 @@
-import { PDFParse } from "pdf-parse";
 import Tesseract from "tesseract.js";
 import { normalizeText } from "@/lib/utils";
 import { ExtractedDocumentData } from "@/lib/document/types";
@@ -31,6 +30,7 @@ export async function extractDocumentData(file: File): Promise<ExtractedDocument
   let confidence = 0;
 
   if (file.type === "application/pdf") {
+    const { PDFParse } = await import("pdf-parse");
     const parser = new PDFParse({ data: bytes });
     const parsed = await parser.getText();
     await parser.destroy();
