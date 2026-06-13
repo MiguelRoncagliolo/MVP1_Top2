@@ -52,6 +52,7 @@ This MVP is a pre-check assistant. It does not perform official OS10 validation 
 
 1. Copy `.env.example` into `.env`.
 2. Configure Supabase project values and `DATABASE_URL`.
+   Use `DIRECT_URL` as well for Prisma migrations when working with Supabase poolers.
 3. Install dependencies with `npm install`.
 4. Run `npm run db:generate`.
 5. Run `npm run db:migrate`.
@@ -80,6 +81,22 @@ This MVP is a pre-check assistant. It does not perform official OS10 validation 
 - Full runtime requires real Supabase and PostgreSQL configuration.
 - OCR confidence depends on document quality.
 - Document consistency checks are heuristic and intentionally non-forensic.
+
+## Required Supabase Variables
+
+Preferred modern names:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SECRET_KEY`
+- `DATABASE_URL`
+- `DIRECT_URL`
+- `SUPABASE_STORAGE_BUCKET`
+
+Legacy names are still supported for compatibility:
+
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
 ## Legal/Operational Note
 
