@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ReviewCaseStatus {
+  draft
+  processing
+  completed
+  needs_attention
+  failed
+}
+
+enum DocumentSourceType {
+  reference
+  submitted
+}
+
+enum ReviewStatus {
+  approvable
+  observe
+  reject
+  manual_review
+}
+
+model ReviewCase {
+  id                   String                  @id @default(cuid())
+  userId               String
+  title                String
+  expectedName         String
+  expectedRut          String
+  expectedDocumentType String?
+  status               ReviewCaseStatus       @default(draft)
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  documents            Document[]
+  extractedData        ExtractedDocumentData[]
+  comparison           DocumentComparison?
+  reviewResult         ReviewResult?
+
+  @@index([userId, createdAt])
+}
+
+model Document {
+  id          String               @id @default(cuid())
+  reviewCaseId String
+  sourceType  DocumentSourceType
+  storagePath String
+  fileName    String
+  mimeType    String
+  fileSize    Int
+  uploadedAt  DateTime             @default(now())
+  reviewCase  ReviewCase           @relation(fields: [reviewCaseId], references: [id], onDelete: Cascade)
+  extraction  ExtractedDocumentData?
+
+  @@index([reviewCaseId, sourceType])
+}
+
+model ExtractedDocumentData {
+  id                    String              @id @default(cuid())
+  reviewCaseId          String
+  documentId            String              @unique
+  sourceType            DocumentSourceType
+  rawText               String
+  extractedName         String?
+  extractedRut          String?
+  extractedDates        Json
+  extractedDocumentType String?
+  textBlocks            Json
+  ocrConfidence         Float
+  createdAt             DateTime            @default(now())
+  reviewCase            ReviewCase          @relation(fields: [reviewCaseId], references: [id], onDelete: Cascade)
+  document              Document            @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([reviewCaseId, sourceType])
+}
+
+model DocumentComparison {
+  id                    String     @id @default(cuid())
+  reviewCaseId          String     @unique
+  identityMatch         Boolean
+  rutMatch              Boolean
+  referenceLayoutMatch  Boolean
+  detectedAnomaliesJson Json
+  confidenceScore       Float
+  summary               String
+  createdAt             DateTime   @default(now())
+  reviewCase            ReviewCase @relation(fields: [reviewCaseId], references: [id], onDelete: Cascade)
+}
+
+model ReviewResult {
+  id             String       @id @default(cuid())
+  reviewCaseId   String       @unique
+  reviewStatus   ReviewStatus
+  recommendation String
+  notes          String?
+  createdAt      DateTime     @default(now())
+  reviewCase     ReviewCase   @relation(fields: [reviewCaseId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
