@@ -4,10 +4,47 @@ import { ExtractedDocumentData } from "@/lib/document/types";
 const rutRegex = /\b\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]\b/g;
 const dateRegex = /\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b/g;
 
-function pickName(lines: string[]) {
+const ignoredNameFragments = [
+  "certificado",
+  "documento",
+  "pre-check",
+  "revision",
+  "observaciones",
+  "entidad emisora",
+  "datos del titular",
+  "curso",
+  "fecha",
+  "institucion",
+  "codigo verificacion",
+  "referencia valida",
+  "requiere revision",
+  "os10",
+];
+
+function cleanNameValue(value: string) {
+  return value
+    .replace(/^[^:]*:\s*/i, "")
+    .replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function pickName(lines: string[]) {
+  const labeledLine = lines.find((line) => /nombre\s*:/i.test(line));
+  if (labeledLine) {
+    const labeledName = cleanNameValue(labeledLine);
+    if (labeledName.split(/\s+/).length >= 2) {
+      return labeledName;
+    }
+  }
+
   const candidates = lines
-    .map((line) => line.replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ\s]/g, " ").trim())
-    .filter((line) => line.split(/\s+/).length >= 2 && line.length > 8);
+    .map(cleanNameValue)
+    .filter((line) => line.split(/\s+/).length >= 2 && line.length > 8)
+    .filter((line) => {
+      const normalized = normalizeText(line);
+      return !ignoredNameFragments.some((fragment) => normalized.includes(fragment));
+    });
 
   return candidates[0] ?? null;
 }

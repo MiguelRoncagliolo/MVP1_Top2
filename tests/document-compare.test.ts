@@ -44,4 +44,27 @@ describe("compareDocuments", () => {
     expect(result.reviewStatus).toBe("reject");
     expect(result.detectedAnomalies.length).toBeGreaterThan(1);
   });
+
+  it("gives a higher confidence score to a full match than to a mismatched document", () => {
+    const matching = compareDocuments({
+      expectedName: "Juan Perez",
+      expectedRut: "12.345.678-5",
+      reference,
+      submitted: reference,
+    });
+
+    const mismatched = compareDocuments({
+      expectedName: "Juan Perez",
+      expectedRut: "12.345.678-5",
+      reference,
+      submitted: {
+        ...reference,
+        extractedName: "Certificado OS10",
+        extractedRut: "12.345.678-0",
+        textBlocks: ["OTRO FORMATO", "RUT 12.345.678-0"],
+      },
+    });
+
+    expect(matching.confidenceScore).toBeGreaterThan(mismatched.confidenceScore);
+  });
 });

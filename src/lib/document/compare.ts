@@ -17,6 +17,31 @@ function lineSimilarity(a: string[], b: string[]) {
   return overlap / Math.max(setA.size, setB.size, 1);
 }
 
+function computeConfidenceScore(params: {
+  identityMatch: boolean;
+  rutMatch: boolean;
+  referenceLayoutScore: number;
+  submittedOcrConfidence: number;
+  anomalyCount: number;
+}) {
+  const {
+    identityMatch,
+    rutMatch,
+    referenceLayoutScore,
+    submittedOcrConfidence,
+    anomalyCount,
+  } = params;
+
+  const signalScore =
+    (identityMatch ? 0.35 : 0) +
+    (rutMatch ? 0.35 : 0) +
+    Math.min(Math.max(referenceLayoutScore, 0), 1) * 0.2 +
+    Math.min(Math.max(submittedOcrConfidence, 0), 1) * 0.1;
+
+  const anomalyPenalty = Math.min(anomalyCount * 0.08, 0.24);
+  return Number(Math.max(0, Math.min(1, signalScore - anomalyPenalty)).toFixed(2));
+}
+
 export function compareDocuments(params: {
   expectedName: string;
   expectedRut: string;
@@ -55,14 +80,13 @@ export function compareDocuments(params: {
     anomalies.push("No se logró extraer texto útil del documento enviado.");
   }
 
-  const confidenceScore = Number(
-    (
-      submitted.ocrConfidence * 0.45 +
-      (identityMatch ? 0.2 : 0) +
-      (rutMatch ? 0.2 : 0) +
-      (referenceLayoutMatch ? 0.15 : 0)
-    ).toFixed(2),
-  );
+  const confidenceScore = computeConfidenceScore({
+    identityMatch,
+    rutMatch,
+    referenceLayoutScore,
+    submittedOcrConfidence: submitted.ocrConfidence,
+    anomalyCount: anomalies.length,
+  });
 
   let reviewStatus: ComparisonResult["reviewStatus"] = "manual_review";
   if (identityMatch && rutMatch && referenceLayoutMatch && submitted.ocrConfidence >= 0.75) {
