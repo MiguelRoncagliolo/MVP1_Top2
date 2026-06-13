@@ -7,8 +7,6 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createCaseSchema, authSchema, validateFile } from "@/lib/validation";
 import { env, isDatabaseConfigured, isSupabaseConfigured } from "@/lib/env";
-import { extractDocumentData } from "@/lib/document/extract";
-import { compareDocuments } from "@/lib/document/compare";
 
 function requireConfiguredRuntime() {
   if (!isSupabaseConfigured() || !isDatabaseConfigured()) {
@@ -59,6 +57,10 @@ export async function signOutAction() {
 
 export async function createReviewCaseAction(formData: FormData) {
   requireConfiguredRuntime();
+  const [{ extractDocumentData }, { compareDocuments }] = await Promise.all([
+    import("@/lib/document/extract"),
+    import("@/lib/document/compare"),
+  ]);
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
