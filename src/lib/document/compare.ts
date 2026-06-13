@@ -17,6 +17,23 @@ function lineSimilarity(a: string[], b: string[]) {
   return overlap / Math.max(setA.size, setB.size, 1);
 }
 
+function getMissingReferenceSignals(reference: ExtractedDocumentData, submitted: ExtractedDocumentData) {
+  const referenceText = normalizeText(reference.rawText);
+  const submittedText = normalizeText(submitted.rawText);
+  const signals = [
+    "nombre:",
+    "rut:",
+    "curso:",
+    "fecha",
+    "institucion",
+    "codigo verificacion",
+  ];
+
+  return signals.filter(
+    (signal) => referenceText.includes(signal) && !submittedText.includes(signal),
+  );
+}
+
 function computeConfidenceScore(params: {
   identityMatch: boolean;
   rutMatch: boolean;
@@ -72,6 +89,30 @@ export function compareDocuments(params: {
   if (!rutMatch) anomalies.push("El RUT detectado no coincide con el esperado.");
   if (!referenceLayoutMatch) {
     anomalies.push("La estructura textual difiere de la referencia cargada.");
+
+    const missingSignals = getMissingReferenceSignals(reference, submitted);
+    if (missingSignals.length > 0) {
+      anomalies.push(
+        `Faltan senales del formato de referencia en el documento revisado: ${missingSignals.join(", ")}.`,
+      );
+    }
+
+    if (
+      reference.extractedDocumentType &&
+      submitted.extractedDocumentType &&
+      reference.extractedDocumentType !== submitted.extractedDocumentType
+    ) {
+      anomalies.push(
+        `El tipo de documento detectado difiere de la referencia: ${submitted.extractedDocumentType} vs ${reference.extractedDocumentType}.`,
+      );
+    }
+
+    const sharedDates = submitted.extractedDates.filter((date) =>
+      reference.extractedDates.includes(date),
+    );
+    if (reference.extractedDates.length > 0 && sharedDates.length === 0) {
+      anomalies.push("Las fechas detectadas no coinciden con las presentes en la referencia.");
+    }
   }
   if (submitted.ocrConfidence < 0.55) {
     anomalies.push("La confianza del OCR es baja; se recomienda revisión manual.");
@@ -94,14 +135,15 @@ export function compareDocuments(params: {
   } else if (!identityMatch || !rutMatch) {
     reviewStatus = submitted.ocrConfidence < 0.55 ? "manual_review" : "reject";
   } else if (!referenceLayoutMatch) {
-    reviewStatus = "observe";
+    reviewStatus = "manual_review";
   }
 
   const recommendationMap: Record<ComparisonResult["reviewStatus"], string> = {
     approvable: "Aprobable para siguiente revisión humana.",
     observe: "Observar diferencias de formato antes de continuar.",
     reject: "Rechazar preliminarmente o escalar por inconsistencia de identidad.",
-    manual_review: "Requiere revisión manual por baja certeza o extracción incompleta.",
+    manual_review:
+      "Requiere revisión manual por diferencias de formato, baja certeza o extracción incompleta.",
   };
 
   const summary = [

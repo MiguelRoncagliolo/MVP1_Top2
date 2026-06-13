@@ -67,4 +67,37 @@ describe("compareDocuments", () => {
 
     expect(matching.confidenceScore).toBeGreaterThan(mismatched.confidenceScore);
   });
+
+  it("sends a format mismatch with matching identity to manual review and explains why", () => {
+    const result = compareDocuments({
+      expectedName: "Juan Perez",
+      expectedRut: "12.345.678-5",
+      reference: {
+        ...reference,
+        rawText:
+          "CERTIFICADO OS10\nNombre: Juan Perez\nRUT: 12.345.678-5\nCurso: OS10\nFecha: 01/01/2026\nInstitucion: Demo",
+        textBlocks: [
+          "CERTIFICADO OS10",
+          "Nombre: Juan Perez",
+          "RUT: 12.345.678-5",
+          "Curso: OS10",
+          "Fecha: 01/01/2026",
+          "Institucion: Demo",
+        ],
+      },
+      submitted: {
+        ...reference,
+        rawText: "Nombre: Juan Perez\nRUT: 12.345.678-5\nDocumento simple",
+        textBlocks: ["Nombre: Juan Perez", "RUT: 12.345.678-5", "Documento simple"],
+      },
+    });
+
+    expect(result.identityMatch).toBe(true);
+    expect(result.rutMatch).toBe(true);
+    expect(result.referenceLayoutMatch).toBe(false);
+    expect(result.reviewStatus).toBe("manual_review");
+    expect(
+      result.detectedAnomalies.some((item) => item.includes("Faltan senales del formato")),
+    ).toBe(true);
+  });
 });
