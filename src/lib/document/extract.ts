@@ -41,7 +41,7 @@ export async function extractDocumentData(file: File): Promise<ExtractedDocument
       import("node:module"),
     ]);
     const require = createRequire(import.meta.url);
-    const workerPath = require.resolve("tesseract.js/src/worker-script/node/index.js");
+    const workerPath = require.resolve("tesseract.js/dist/worker.min.js");
     const worker = await createWorker("spa", 1, { workerPath });
     const result = await worker.recognize(bytes);
     await worker.terminate();
