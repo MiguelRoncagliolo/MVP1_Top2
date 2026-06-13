@@ -18,9 +18,13 @@ export async function createSupabaseServerClient() {
           return cookieStore.getAll();
         },
         setAll(items) {
-          items.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options),
-          );
+          try {
+            items.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options),
+            );
+          } catch {
+            // Server components cannot always mutate cookies during render.
+          }
         },
       },
     },
