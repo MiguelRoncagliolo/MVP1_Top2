@@ -1,4 +1,3 @@
-import Tesseract from "tesseract.js";
 import { normalizeText } from "@/lib/utils";
 import { ExtractedDocumentData } from "@/lib/document/types";
 
@@ -37,7 +36,15 @@ export async function extractDocumentData(file: File): Promise<ExtractedDocument
     rawText = parsed.text ?? "";
     confidence = rawText.trim() ? 0.82 : 0.2;
   } else {
-    const result = await Tesseract.recognize(bytes, "spa");
+    const [{ createWorker }, { createRequire }] = await Promise.all([
+      import("tesseract.js"),
+      import("node:module"),
+    ]);
+    const require = createRequire(import.meta.url);
+    const workerPath = require.resolve("tesseract.js/src/worker-script/node/index.js");
+    const worker = await createWorker("spa", 1, { workerPath });
+    const result = await worker.recognize(bytes);
+    await worker.terminate();
     rawText = result.data.text ?? "";
     confidence = (result.data.confidence ?? 0) / 100;
   }
