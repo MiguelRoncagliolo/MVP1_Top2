@@ -56,9 +56,16 @@ export async function signUpAction(
     });
 
     const supabase = await createSupabaseServerClient();
-    const { error } = await supabase.auth.signUp(values);
+    const { data, error } = await supabase.auth.signUp(values);
     if (error) {
       throw new Error(error.message);
+    }
+
+    if (data.user && (data.user.identities?.length ?? 0) === 0) {
+      return {
+        error:
+          "Ese correo ya está registrado. Inicia sesión o usa otro correo.",
+      };
     }
 
     redirect("/dashboard");
