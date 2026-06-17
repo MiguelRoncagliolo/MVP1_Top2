@@ -2,6 +2,7 @@
 
 import { ZodError } from "zod";
 import { revalidatePath } from "next/cache";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { redirect } from "next/navigation";
 import type { FormActionState } from "@/lib/action-state";
 import { env, isDatabaseConfigured, isSupabaseConfigured } from "@/lib/env";
@@ -34,6 +35,14 @@ function getActionErrorMessage(error: unknown) {
   return "Ocurrió un error inesperado. Inténtalo nuevamente.";
 }
 
+function handleActionError(error: unknown): FormActionState {
+  if (isRedirectError(error)) {
+    throw error;
+  }
+
+  return { error: getActionErrorMessage(error) };
+}
+
 export async function signUpAction(
   _state: FormActionState,
   formData: FormData,
@@ -54,7 +63,7 @@ export async function signUpAction(
 
     redirect("/dashboard");
   } catch (error) {
-    return { error: getActionErrorMessage(error) };
+    return handleActionError(error);
   }
 }
 
@@ -78,7 +87,7 @@ export async function signInAction(
 
     redirect("/dashboard");
   } catch (error) {
-    return { error: getActionErrorMessage(error) };
+    return handleActionError(error);
   }
 }
 
@@ -277,6 +286,6 @@ export async function createReviewCaseAction(
     revalidatePath("/dashboard");
     redirect(`/cases/${reviewCase.id}`);
   } catch (error) {
-    return { error: getActionErrorMessage(error) };
+    return handleActionError(error);
   }
 }
